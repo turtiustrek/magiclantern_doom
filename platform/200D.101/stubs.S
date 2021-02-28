@@ -54,8 +54,8 @@ NSTUB(0xE01CA9C9,  memmap_info)            /* Exception vector, DRYOS system mem
 NSTUB(0xE0148E3B,  smemShowFix)            /* Common Lower, Common Upper etc */
 
 /** Memory allocation **/
-NSTUB(0xDF007B59, _AllocateMemory)
-NSTUB(0xDF007D11, _FreeMemory)
+NSTUB(0xE0693B23, _AllocateMemory)
+NSTUB(0xE0693B5B, _FreeMemory)
 NSTUB(0xDF0079E3,  GetMemoryInformation)   /* called from AllocateMemory */
 NSTUB(0xDF0079B7,  GetSizeOfMaxRegion)
 NSTUB(0xDF00AC55, _alloc_dma_memory)
@@ -119,7 +119,7 @@ NSTUB(    0x799C,  mpu_recv_ring_buffer_tail) // ring buffer index incremented i
 
 /** Misc **/
 NSTUB(0xE11C7CF9,  vsnprintf)              /* called near dmstart; references "01234567", "0123456789", "0123456789abcdef" and "0123456789ABCDEF"; second arg is size; the one called by DebugMsg only knows %s */
-
+NSTUB(0xE04BDC5D,uart_printf)
 
 // SJE unsure stuff: currently majority copied from 50D (I have roms for this),
 // or 100D (more modern, presumably sort of similar)

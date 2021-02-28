@@ -5,7 +5,7 @@
 all:: autoexec.bin print_build_info
 
 clean::
-	$(call rm_files, *.o *.d autoexec autoexec.bin magiclantern magiclantern.bin)
+	$(call rm_files, *.o *.d autoexec autoexec.bin magiclantern magiclantern.bin ../../src/chocdoom/*.d ../../src/chocdoom/*.o)
 
 CFLAGS += \
 	-DCONFIG_MAGICLANTERN=1 \

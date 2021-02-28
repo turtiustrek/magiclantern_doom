@@ -1,5 +1,6 @@
 
 #include <dryos.h>
+#include "extfunctions.h"
 #include <mem.h>
 #include <rand.h>
 
@@ -34,7 +35,7 @@ void srand(unsigned int seed)
 
 char *strdup(const char*str)
 {
-    char *ret = malloc(strlen(str) + 1);
+    char *ret = _AllocateMemory(strlen(str) + 1);
     strcpy(ret, str);
     return ret;
 }
@@ -52,7 +53,7 @@ int clock()
 
 void *calloc(size_t nmemb, size_t size)
 {
-    void *ret = malloc(nmemb * size);
+    void *ret = _AllocateMemory(nmemb * size);
     if (ret)
         memset(ret, 0x00, nmemb * size);
     
@@ -61,12 +62,12 @@ void *calloc(size_t nmemb, size_t size)
 
 void *realloc(void *ptr, size_t size)
 {
-    void *ret = malloc(size);
+    void *ret = _AllocateMemory(size);
     
     if (ptr)
     {
         memcpy(ret, ptr, size);
-        free(ptr);
+        _FreeMemory(ptr);
     }
     
     return ret;
@@ -90,5 +91,38 @@ char *strcat(char *dest, const char *src)
     strlcat(dest, src, 0x7FFFFFFF);
     return dest;
 }
+
+int strncasecmp(const char *s1, const char *s2, int n)
+{
+    if (n && s1 != s2)
+    {
+        do {
+            int d = tolower(*s1) - tolower(*s2);
+            if (d || *s1 == '\0' || *s2 == '\0') return d;
+            s1++;
+            s2++;
+        } while (--n);
+    }
+    return 0;
+}
+float atof(const char* s){
+  float rez = 0, fact = 1;
+  if (*s == '-'){
+    s++;
+    fact = -1;
+  };
+  for (int point_seen = 0; *s; s++){
+    if (*s == '.'){
+      point_seen = 1; 
+      continue;
+    };
+    int d = *s - '0';
+    if (d >= 0 && d <= 9){
+      if (point_seen) fact /= 10.0f;
+      rez = rez * 10.0f + (float)d;
+    };
+  };
+  return rez * fact;
+};
 
 
