@@ -28,10 +28,10 @@
 
 struct context
 {
-        uint32_t                cpsr;           // off_0x00;
-        uint32_t                r[13];          // off_0x04;
-        uint32_t                lr;             // off_0x38;
-        uint32_t                pc;             // off_0x3C;
+        uint32_t                r[13];          // off_0x0;
+        uint32_t                lr;             // off_0x34;
+        uint32_t                pc;             // off_0x38;
+        uint32_t                cpsr;             // off_0x3C;
 }; // 0x40 bytes
 
 struct task

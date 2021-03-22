@@ -43,14 +43,16 @@ planefunction_t		ceilingfunc;
 
 // Here comes the obnoxious "visplane".
 #define MAXVISPLANES	128
-visplane_t		visplanes[MAXVISPLANES];
+//visplane_t		visplanes[MAXVISPLANES];
+visplane_t*      visplanes;
 visplane_t*		lastvisplane;
 visplane_t*		floorplane;
 visplane_t*		ceilingplane;
 
 // ?
 #define MAXOPENINGS	SCREENWIDTH*64
-short			openings[MAXOPENINGS];
+//short			openings[MAXOPENINGS];
+short* openings;
 short*			lastopening;
 
 
@@ -93,6 +95,18 @@ fixed_t			cachedystep[SCREENHEIGHT];
 //
 void R_InitPlanes (void)
 {
+    openings = Z_Malloc(sizeof(short) * MAXOPENINGS, PU_STATIC, NULL);
+    if(openings <= 0){
+        I_Error("Cannot malloc openings:0x%x\n",openings);
+    }
+    memset(openings,0,sizeof(short) * MAXOPENINGS);
+
+     visplanes = Z_Malloc(sizeof(visplane_t) * MAXVISPLANES, PU_STATIC, NULL);
+    if(visplanes <= 0){
+        I_Error("Cannot malloc visplanes:0x%x\n",visplanes);
+    }
+    memset(visplanes,0,sizeof(visplane_t) * MAXVISPLANES);
+    
   // Doh!
 }
 

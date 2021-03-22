@@ -93,6 +93,8 @@ NSTUB(0xE00C5415,  GUI_Control)
 NSTUB(0xE04A7EF5,  SetGUIRequestMode)
 NSTUB(0xE00921DD,  gui_init_end)
 NSTUB(0xE00C526B,  gui_main_task)
+THUMB_FN(0xe04a044d, RefreshVrmsSurface) // "Call RefreshVrmsSurface"
+
 
 /** GUI timers **/
 NSTUB(0xE04B9A3B,  CancelTimer)            /* from error message */
@@ -120,6 +122,20 @@ NSTUB(    0x799C,  mpu_recv_ring_buffer_tail) // ring buffer index incremented i
 /** Misc **/
 NSTUB(0xE11C7CF9,  vsnprintf)              /* called near dmstart; references "01234567", "0123456789", "0123456789abcdef" and "0123456789ABCDEF"; second arg is size; the one called by DebugMsg only knows %s */
 NSTUB(0xE04BDC5D,uart_printf)
+THUMB_FN(0xe02b9464, GrypFill3DRect)
+THUMB_FN(0xe02b9410,GrypDrawRect)
+THUMB_FN(0xe02b9058,GrypSetGradStep)
+THUMB_FN(0xe01ef518,XimrExe)
+THUMB_FN(0xe049ebba,DrawVRAM)
+THUMB_FN(0xe02b981c,GrypSetImageIndexColorTable)
+THUMB_FN(0xe02b9394,GrypDrawLine)
+THUMB_FN(0xe02b94ea,GrypDrawImage)
+THUMB_FN(0xe02b9320,GrypDrawHLine)
+THUMB_FN(0xe02ba482,JediDraw)
+THUMB_FN(0xe02b8d30,GrypFinish)
+THUMB_FN(0xe02b8da0,GrypSetDstVramHandle);
+THUMB_FN(0xe025f116,InitializeMzrmZtoMSnd)
+THUMB_FN(0xe00469c0,EvShell)
 
 // SJE unsure stuff: currently majority copied from 50D (I have roms for this),
 // or 100D (more modern, presumably sort of similar)
@@ -133,7 +149,7 @@ NSTUB(0xe023ccc7,  is_taskid_valid) // probably wrong
 NSTUB(    0x4ea4,  dm_names) // in DebugMsg, before the 1st loop target
 NSTUB(   0x1fd7c,  sd_device) // in sdReadBlk, probably 0xe02b6fa2.  Lots of refs
                               // to 0x1fd7c, some to 0x1fd80
-NSTUB(    0x4844,  gui_main_struct) // in gui_main_task, 0xe00c527c, load reg after bl gui_init_end
+NSTUB(    0x4838,  gui_main_struct) // in gui_main_task, 0xe00c527c, load reg after bl gui_init_end
                                     // or possibly 0x4838 - this looks to be the start of the struct
 NSTUB(0xe00c54ab,  GUI_ChangeMode) // "GUI_ChangeMode:%d" string
 NSTUB(0xe04b907d,  DispSensorStart) // 0xe794 looks to be a bool for whether Sensor is started
@@ -156,7 +172,7 @@ NSTUB(0xe04ba3d5,  GetMemoryAddressOfMemoryChunk)           // AJ_PackMemory_Pac
 NSTUB(0xe062df0a,  AllocateMemoryResource)                  // m_pfAllocMemoryCBR, this function takes 4 params in 200D, 3 for 50D
 NSTUB(0xe062df38,  AllocateContinuousMemoryResource)        // m_pfContAllocMemoryCBR, takes 4 params now, 3 for 50D
 NSTUB(0xe062dfde,  FreeMemoryResource)                      // m_pfFreeMemoryCBR
-NSTUB(0xdf00b1d8,  msg_queue_receive) // "SystemIF::KerQueue.c" useful for finding some of these msg_ functions
+NSTUB(0xDF00B1D9,  msg_queue_receive) // "SystemIF::KerQueue.c" useful for finding some of these msg_ functions
 NSTUB(0xdf00b26b,  msg_queue_post)
 NSTUB(0xdf00b17d,  msg_queue_count) // Above "!!!!!!! QUE Overflo" - maybe 0xdf00b17c.  Not sure here,
                                     // params looks weird but I think decompilation may have confused
@@ -226,7 +242,7 @@ NSTUB(   0xfd84,  bmp_vram_info) // function e04a044c looks relevant, see refs t
 
 NSTUB(   0x242C0,  LCD_Palette) // in InitializeBitmapDisplayDevice, right after 0xc0f14800
 //NSTUB(    0x30F8,  task_max)
-//NSTUB(    0x1934,  task_dispatch_hook)
+NSTUB(    0x0000412c,  task_dispatch_hook)
 //NSTUB(    0x3960,  gui_timer_struct) // in GUI_Control_Post
 //NSTUB(    0x7674,  mvr_config)
 //NSTUB(0xC0220000,  camera_engine)
@@ -239,7 +255,7 @@ NSTUB(    0xFF3C,  additional_version)
 //NSTUB(0xFF8598C4, _prop_request_change)
 //NSTUB(0xFF85E90C,  EnableImagePhysicalScreenParameter)
 //NSTUB(0xFF863E5C,  dm_set_store_level) // called by "dmstore"
-//NSTUB(0xFF86F990,  task_trampoline)
+ NSTUB(0xdf00325d,  task_trampoline)
 //NSTUB(0xFF8898CC,  gui_local_post)
 //NSTUB(0xFF889CA8,  gui_other_post)
 //NSTUB(0xFF889DCC,  gui_post_10000085) // should be called post 100000a5 no ? <-- not sure what this means.

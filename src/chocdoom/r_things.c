@@ -832,11 +832,12 @@ void R_SortVisSprites (void)
 //
 // R_DrawSprite
 //
+static  short		clipbot[SCREENWIDTH];
+static  short		cliptop[SCREENWIDTH];
 void R_DrawSprite (vissprite_t* spr)
 {
     drawseg_t*		ds;
-    short		clipbot[SCREENWIDTH];
-    short		cliptop[SCREENWIDTH];
+  
     int			x;
     int			r1;
     int			r2;

@@ -781,7 +781,7 @@ void TryRunTics (void)
 	    return;
 	}
 
-        I_Sleep(1);
+       I_Sleep(1);
     }
 
     // run the count * ticdup dics

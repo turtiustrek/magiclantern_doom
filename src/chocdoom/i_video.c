@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -23,7 +23,7 @@
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: i_x.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
+    rcsid[] = "$Id: i_x.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
 
 #include "config.h"
 #include "v_video.h"
@@ -31,6 +31,7 @@ rcsid[] = "$Id: i_x.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
 #include "d_event.h"
 #include "d_main.h"
 #include "i_video.h"
+#include "i_scale.h"
 #include "z_zone.h"
 
 #include "tables.h"
@@ -38,10 +39,15 @@ rcsid[] = "$Id: i_x.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
 #include "bmp.h"
 #include <stdint.h>
 #include <stdbool.h>
-
+#include "extfunctions.h"
+#include "w_wad.h"
+#include "deh_str.h"
 // The screen buffer; this is modified to draw things to the screen
 
 byte *I_VideoBuffer = NULL;
+
+//scaled buffer
+byte *S_VideoBuffer = NULL;
 
 // If true, game is running as a screensaver
 
@@ -61,6 +67,9 @@ boolean screenvisible;
 // the values exceed the value of mouse_threshold, they are multiplied
 // by mouse_acceleration to increase the speed.
 
+int button_event;
+bool button_state;
+
 float mouse_acceleration = 2.0;
 int mouse_threshold = 10;
 
@@ -76,21 +85,18 @@ int usemouse = 0;
 
 int vanilla_keyboard_mapping = true;
 
-
 typedef struct
 {
-	byte r;
-	byte g;
-	byte b;
+    byte r;
+    byte g;
+    byte b;
 } col_t;
 
-// Palette converted to RGB565
+// Palette converted to RGB32
 
-static uint16_t rgb565_palette[256];
+static uint32_t rgb32_palette[256];
 
 // Last touch state
-
-
 
 // Last button state
 
@@ -109,150 +115,135 @@ struct marv
     uint32_t height;       // Y resolution; may be larger than screen size
     uint32_t pmem;         // pointer to PMEM (Permanent Memory) structure
 };
-void I_InitGraphics (void)
+
+void I_InitGraphics(void)
 {
-	
 
-	I_VideoBuffer = (byte*)Z_Malloc (SCREENWIDTH * SCREENHEIGHT, PU_STATIC, NULL);
+    I_VideoBuffer = (byte *)Z_Malloc(SCREENWIDTH * SCREENHEIGHT, PU_STATIC, NULL);
+    S_VideoBuffer = (byte *)Z_Malloc(mode_scale_2x.height * mode_scale_2x.width, PU_STATIC, NULL);
+    uart_printf("S_VideoBuffer at: 0x%x X:%d Y:%d\n", S_VideoBuffer, mode_scale_2x.width, mode_scale_2x.height);
 
-	screenvisible = true;
+    screenvisible = true;
 }
 
-void I_ShutdownGraphics (void)
+void I_ShutdownGraphics(void)
 {
-	Z_Free (I_VideoBuffer);
+    Z_Free(S_VideoBuffer);
+    Z_Free(I_VideoBuffer);
 }
 
-void I_StartFrame (void)
-{
-
-}
-
-void I_GetEvent (void)
-{
-	event_t event;
-	bool button_state;
-
-	button_state = 1; //turtius: implement button reads
-
-	if (last_button_state != button_state)
-	{
-		last_button_state = button_state;
-
-		event.type = last_button_state ? ev_keydown : ev_keyup;
-		event.data1 = KEY_FIRE;
-		event.data2 = -1;
-		event.data3 = -1;
-
-		D_PostEvent (&event);
-	}
-
-}
-
-void I_StartTic (void)
-{
-	I_GetEvent();
-}
-
-void I_UpdateNoBlit (void)
+void I_StartFrame(void)
 {
 }
-static uint32_t rgb2yuv422(uint8_t r, uint8_t g, uint8_t b)
+
+void I_GetEvent(void)
 {
-    float R = r;
-    float G = g;
-    float B = b;
-    float Y, U, V;
-    uint8_t y, u, v;
+    event_t event;
+    bool local_button_state;
 
-    Y = R * .299000 + G * .587000 + B * .114000;
-    U = R * -.168736 + G * -.331264 + B * .500000 + 128;
-    V = R * .500000 + G * -.418688 + B * -.081312 + 128;
+    local_button_state = button_state; //turtius: implement button reads
 
-    y = Y;
-    u = U;
-    v = V;
-
-    return (u << 24) | (y << 16) | (v << 8) | y;
-}
-void I_FinishUpdate (void)
-{
-	int x, y;
-	byte index;
-
-
-
-	for (y = 0; y < SCREENHEIGHT; y++)
-	{
-		for (x = 0; x < SCREENWIDTH; x++)
-		{
-			index = I_VideoBuffer[y * SCREENWIDTH + x];
-uint8_t *bmp = bmp_vram_raw();
-
-    struct marv *marv = bmp_marv();
-
-    // UYVY display, must convert
-    //uint32_t color = 0xFFFFFFFF;
-    uint32_t uyvy = rgb2yuv422(index >> 24,
-                               (index >> 16) & 0xff,
-                              (index >> 8) & 0xff);
-     // uint32_t uyvy = rgb2yuv422(index);
-    uint8_t alpha =  0xff;
-
-    if (marv->opacity_data)
+    if (last_button_state != button_state)
     {
-        // 80D, 200D
-        // adapted from names_are_hard, https://pastebin.com/Vt84t4z1
-        uint32_t *offset = (uint32_t *)&bmp[(x & ~1) * 2 + y * 2 * marv->width];
-        if (x % 2)
-        {
-            // set U, Y2, V, keep Y1
-            *offset = (*offset & 0x0000FF00) | (uyvy & 0xFFFF00FF);
-        }
-        else
-        {
-            // set U, Y1, V, keep Y2
-            *offset = (*offset & 0xFF000000) | (uyvy & 0x00FFFFFF);
-        }
-        marv->opacity_data[x + y * marv->width] = alpha;
+        last_button_state = local_button_state;
+        event.type = last_button_state ? ev_keydown : ev_keyup;
+        event.data1 = button_event;
+        event.data2 = -1;
+        event.data3 = -1;
+        button_state =0;
+        D_PostEvent(&event);
     }
-			//((uint16_t*)lcd_frame_buffer)[x * GFX_MAX_WIDTH + (GFX_MAX_WIDTH - y - 1)] = rgb565_palette[index];
-			//turtius: fix drawing routines 
-		}
-	}
+}
+
+void I_StartTic(void)
+{
+    I_GetEvent();
+}
+
+void I_UpdateNoBlit(void)
+{
+}
+
+extern void RefreshVrmsSurface(void);
+//7% increese in speed with unrolling and stuff
+//TODO: find a better way to refill the VRAM buffer
+
+extern void GrypFill3DRect(int a, int b, int c, int d, int e, int f, int g, int h, int i, int j, int k, int l, int m);
+extern void JediDraw(int a, int *b, int c, int *d);
+extern void GrypDrawHLine(int a, int b, int c, int d);
+extern void GrypDrawLine(int marv, int x0, int y0, int x1, int y1);
+extern int GrypDrawImage(int marv, int pointer, int unkn, int unkn1, int x, int y, int yy);
+extern void GrypFinish(int marv, int a, int b, int c, int d, int e);
+extern int GrypDrawRect(int marv, int a, int b, int c, int d, int e, int f, int g, int h);
+extern int GrypSetDstVramHandle(int marv);
+extern void GrypSetGradStep(int a, int b, int c, int d, int e, int f, int g, int h);
+extern void XimrExe(int a);
+extern void DrawVRAM(int a, int b, int c, int d, int e, int f, int g, int h, int i);
+void I_FinishUpdate(void)
+{
+    // int start = MEM(0xD400000C);
+    int x, y;
+    byte index;
+    struct MARV *rgb_MARV = MEM(0xfd80);
+    uint32_t *bgra = rgb_MARV->bitmap_data;
+    I_InitScale(I_VideoBuffer, S_VideoBuffer, mode_scale_2x.width * 1);
+
+    mode_scale_2x.DrawScreen(0, 0, SCREENWIDTH, SCREENHEIGHT);
+
+    int row = 0;
+    int col = 0;
+
+    for (y = 0; y < mode_scale_2x.height; y++)
+    {
+        row = y * mode_scale_2x.width;
+        col = ((y + 50) * 960);
+        for (x = 0; x < mode_scale_2x.width; x += 8)
+        { //stolen from names_are_hard and kitor
+            *(bgra + ((x + 150)) + (col)) = rgb32_palette[S_VideoBuffer[row + x]];
+            *(bgra + ((x + 151)) + (col)) = rgb32_palette[S_VideoBuffer[row + x + 1]];
+            *(bgra + ((x + 152)) + (col)) = rgb32_palette[S_VideoBuffer[row + x + 2]];
+            *(bgra + ((x + 153)) + (col)) = rgb32_palette[S_VideoBuffer[row + x + 3]];
+            *(bgra + ((x + 154)) + (col)) = rgb32_palette[S_VideoBuffer[row + x + 4]];
+            *(bgra + ((x + 155)) + (col)) = rgb32_palette[S_VideoBuffer[row + x + 5]];
+            *(bgra + ((x + 156)) + (col)) = rgb32_palette[S_VideoBuffer[row + x + 6]];
+            *(bgra + ((x + 157)) + (col)) = rgb32_palette[S_VideoBuffer[row + x + 7]];
+        }
+    }
+
+    XimrExe(0xA09A0);
 }
 
 //
 // I_ReadScreen
 //
-void I_ReadScreen (byte* scr)
+void I_ReadScreen(byte *scr)
 {
-    memcpy (scr, I_VideoBuffer, SCREENWIDTH * SCREENHEIGHT);
+    memcpy(scr, I_VideoBuffer, SCREENWIDTH * SCREENHEIGHT);
 }
 
 //
 // I_SetPalette
 //
-void I_SetPalette (byte* palette)
+void I_SetPalette(byte *palette)
 {
-	int i;
-	col_t* c;
+    int i;
+    col_t *c;
 
-	for (i = 0; i < 256; i++)
-	{
-		c = (col_t*)palette;
-
-		//rgb565_palette[i] = GFX_RGB565(gammatable[usegamma][c->r],
-		//							   gammatable[usegamma][c->g],
-		//							   gammatable[usegamma][c->b]);
+    for (i = 0; i < 256; i++)
+    {
+        c = (col_t *)palette;
+        rgb32_palette[i] = (gammatable[usegamma][c->b] & 0xff) | (gammatable[usegamma][c->g] << 8) | (gammatable[usegamma][c->r] << 16) | (0xff << 24);
+        //rgb565_palette[i] = GFX_RGB565(gammatable[usegamma][c->r],
+        //							   gammatable[usegamma][c->g],
+        //							   gammatable[usegamma][c->b]);
         //turtius: fix this
-		palette += 3;
-	}
+        palette += 3;
+    }
 }
 
 // Given an RGB value, find the closest matching palette index.
 
-int I_GetPaletteIndex (int r, int g, int b)
+int I_GetPaletteIndex(int r, int g, int b)
 {
     int best, best_diff, diff;
     int i;
@@ -263,13 +254,11 @@ int I_GetPaletteIndex (int r, int g, int b)
 
     for (i = 0; i < 256; ++i)
     {
-    	//color.r = GFX_RGB565_R(rgb565_palette[i]);
-    //	color.g = GFX_RGB565_G(rgb565_palette[i]);
-    //	color.b = GFX_RGB565_B(rgb565_palette[i]);
-//turtius: fix this
-        diff = (r - color.r) * (r - color.r)
-             + (g - color.g) * (g - color.g)
-             + (b - color.b) * (b - color.b);
+        color.b = rgb32_palette[i] & 0xff;
+        color.g = (rgb32_palette[i] >> 8) & 0xff;
+        color.r = (rgb32_palette[i] >> 16) & 0xff;
+        //turtius: fix this
+        diff = (r - color.r) * (r - color.r) + (g - color.g) * (g - color.g) + (b - color.b) * (b - color.b);
 
         if (diff < best_diff)
         {
@@ -286,38 +275,38 @@ int I_GetPaletteIndex (int r, int g, int b)
     return best;
 }
 
-void I_BeginRead (void)
+void I_BeginRead(void)
 {
 }
 
-void I_EndRead (void)
+void I_EndRead(void)
 {
 }
 
-void I_SetWindowTitle (char *title)
+void I_SetWindowTitle(char *title)
 {
 }
 
-void I_GraphicsCheckCommandLine (void)
+void I_GraphicsCheckCommandLine(void)
 {
 }
 
-void I_SetGrabMouseCallback (grabmouse_callback_t func)
+void I_SetGrabMouseCallback(grabmouse_callback_t func)
 {
 }
 
-void I_EnableLoadingDisk (void)
+void I_EnableLoadingDisk(void)
 {
 }
 
-void I_BindVideoVariables (void)
+void I_BindVideoVariables(void)
 {
 }
 
-void I_DisplayFPSDots (boolean dots_on)
+void I_DisplayFPSDots(boolean dots_on)
 {
 }
 
-void I_CheckIsScreensaver (void)
+void I_CheckIsScreensaver(void)
 {
 }

@@ -21,10 +21,9 @@
 #define __I_VIDEO__
 
 #include "doomtype.h"
-
 // Screen width and height.
 
-#define SCREENWIDTH  300
+#define SCREENWIDTH  320
 #define SCREENHEIGHT 200
 
 // Screen width used for "squash" scale functions

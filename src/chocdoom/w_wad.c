@@ -261,7 +261,7 @@ int W_NumLumps (void)
 
 int W_CheckNumForName (char* name)
 {
-    uart_printf("W_CheckNumForName: %s\n",name);
+    //uart_printf("W_CheckNumForName: %s\n",name);
     lumpinfo_t *lump_p;
     int i;
 

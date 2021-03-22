@@ -432,19 +432,19 @@ void D_DoomLoop(void)
 
     while (1)
     {
-        uart_printf("TICK!\n");
+        
 
         // frame syncronous IO operations
         I_StartFrame();
-        uart_printf("TryRunTics!\n");
+        
         TryRunTics(); // will run at least one tic
-         uart_printf("S_UpdateSounds!\n");
-        S_UpdateSounds(players[consoleplayer].mo); // move positional sounds
+         
+       // S_UpdateSounds(players[consoleplayer].mo); // move positional sounds
 
         // Update display, next frame, with current state.
         if (screenvisible)
         {
-             uart_printf("D_Display!\n");
+             
             D_Display();
         }
     }

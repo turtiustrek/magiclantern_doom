@@ -50,7 +50,7 @@
 
 #include "w_wad.h"
 #include "z_zone.h"
-
+#include "dryos.h"
 #ifdef __MACOSX__
 #include <CoreFoundation/CFUserNotification.h>
 #endif
@@ -117,7 +117,7 @@ static byte *AutoAllocMemory(int *size, int default_ram, int min_ram)
 
         *size = default_ram * 1024 * 1024;
         
-        zonemem = (char *) 0x56500000;
+        zonemem = (char *) LARGE_RAM;
         uart_printf("AutoAllocMemory: zonemem(0x%x)\n",zonemem);
 
         // Failed to allocate?  Reduce zone size until we reach a size
