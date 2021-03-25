@@ -5,7 +5,7 @@ To compile:
 cd platform/200D.101
 make clean && make -j32
 ```
-With WIFI updater([https://github.com/coon42/drysh_tools](WIP)):
+With WIFI updater([WIP](https://github.com/coon42/drysh_tools)):
 ```
 make clean && make CFLAG_USER='-DSSID=\"turtius\" -DPASS=\"turtius@123\" -DIP=\"192.168.100.13\"' -j32
 ```
