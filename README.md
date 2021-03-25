@@ -1,4 +1,4 @@
-For 200D.101 using ([stm32doom](https://github.com/floppes/stm32doom))
+For 200D.101 using [stm32doom](https://github.com/floppes/stm32doom)
 
 To compile:
 
@@ -12,9 +12,9 @@ make clean && make CFLAG_USER='-DSSID=\"turtius\" -DPASS=\"turtius@123\" -DIP=\"
 ```
 Attributions:
 
--([kitor](https://github.com/kitor)) & names_are_hard: display code
+-[kitor](https://github.com/kitor) & names_are_hard: display code
 
--([coon](https://github.com/coon42)): wifi updater
+-[coon](https://github.com/coon42): wifi updater
 
 
 Magic Lantern
