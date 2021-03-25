@@ -8,8 +8,6 @@
 #include "log-d678.h"
 #include "extfunctions.h"
 
-extern void InitializeMzrmZtoMSnd();
-extern void EvShell(int a);
 
 extern void dump_file(char *name, uint32_t addr, uint32_t size);
 extern void malloc_info(void);
@@ -17,13 +15,79 @@ extern void sysmem_info(void);
 extern void smemShowFix(void);
 extern void font_draw(uint32_t, uint32_t, uint32_t, uint32_t, char *);
 extern void gui_main_task();
-static uint32_t disp_xres = 0;
-static uint8_t *disp_framebuf = NULL;
-static char *vram_next = NULL;
-static char *vram_current = NULL;
-extern void D_DoomMain(void);
-static int inited = 0;
 
+//For DOOM
+extern void D_DoomMain(void);
+extern void ml_gui_main_task();
+//event ring buffer
+ int inited = 0;
+struct
+{
+    int a;
+    int b;
+    int c;
+    char ssid[0x24];
+    int d;
+    int e;
+    int f;
+    int g;
+    int h;
+    char pass[0x3f];
+} * wifisettings;
+extern int wlanconnect(void *);
+
+int wifiConnect(){
+    #if defined(SSID) && defined(PASS) && defined(IP)
+    msleep(1000);
+    wifisettings = _AllocateMemory(0xfc);
+    uart_printf("Allocated 0x%x bytes at 0x%x\n", 0xfc, wifisettings);
+    memset(wifisettings, 0, 0xfc);
+    strcpy(wifisettings->ssid, SSID);
+    strcpy(wifisettings->pass, PASS);
+    char *ip = IP;
+    wifisettings->a = 0;
+    wifisettings->b = 2;
+    wifisettings->c = 2;
+    wifisettings->d = 0;
+    wifisettings->e = 6;
+    wifisettings->f = 4;
+    wifisettings->g = 0;
+    wifisettings->h = 6;
+    // hexDump("A",&wifisettings,0xfc);
+    //Turn lime core on
+    call("NwLimeInit");
+    call("NwLimeOn");
+    call("wlanpoweron");
+    call("wlanup");
+    call("wlanchk");
+    call("wlanipset", ip);
+    if (wlanconnect(wifisettings) != 0)
+    {
+        _FreeMemory(wifisettings);
+        uart_printf("Cant connect to WIFI!\n");
+        return 1;
+    }
+    while (MEM(0x1d90c) == 0xe073631f)
+    {
+        msleep(100);
+    }              //wait for lime core to power on
+    msleep(10000); //wait for the Lime core to init.
+    return 0;
+    #else
+     return 1;
+    #endif
+}
+
+
+
+uint16_t htons(uint16_t v) {
+  return (v >> 8) | (v << 8);
+}
+
+void printError(const char* pErrorMsg) {
+  uart_printf(pErrorMsg);
+}
+extern int drysh_ml_update(int argc, char const *argv[]);
 static void DUMP_ASM task_doom()
 {
 
@@ -31,117 +95,33 @@ static void DUMP_ASM task_doom()
     {
         msleep(100);
     }
+    msleep(1000);
     uart_printf("Starting doom!");
     D_DoomMain();
     while (true)
     {
-        uart_printf("Hello! I am in a error state so um yeah\n");
+        //uart_printf("Hello! I am in a error state so um yeah\n");
         msleep(1000);
     }
 }
-struct gui_main_struct
+#if defined(SSID) && defined(PASS) && defined(IP)
+static void DUMP_ASM task_update()
 {
-    void *obj; // off_0x00;
-    uint32_t counter_550d;
-    uint32_t off_0x08;
-    uint32_t counter; // off_0x0c;
-    uint32_t off_0x10;
-    uint32_t off_0x14;
-    uint32_t off_0x18;
-    uint32_t off_0x1c;
-    uint32_t off_0x20;
-    uint32_t off_0x24;
-    uint32_t off_0x28;
-    uint32_t off_0x2c;
-    struct msg_queue *msg_queue;      // off_0x30;
-    struct msg_queue *off_0x34;       // off_0x34;
-    struct msg_queue *msg_queue_550d; // off_0x38;
-    uint32_t off_0x3c;
-};
-extern struct gui_main_struct gui_main_struct;
-extern int button_event;
-extern bool button_state;
-void ml_gui_main_task()
-{
-    gui_init_end();
-    struct event *event = NULL;
-    int index = 0;
-    void *funcs[GMT_NFUNCS];
-    memcpy(funcs, (void *)GMT_FUNCTABLE, 4 * GMT_NFUNCS);
-
-    gui_init_end(); // no params?
-
+    while (!bmp_vram_raw())
+    {
+        msleep(100);
+    }
+    drysh_ml_update(0,"");
     while (1)
     {
-#if defined(CONFIG_550D) || defined(CONFIG_7D)
-        msg_queue_receive(gui_main_struct.msg_queue_550d, &event, 0);
-        gui_main_struct.counter_550d--;
-#else
-        msg_queue_receive(gui_main_struct.msg_queue, &event, 0);
-        gui_main_struct.counter--;
+         uart_printf("Waiting for reboot!\n");
+        msleep(10);
+
+    }
+    
+}
 #endif
 
-        if (event == NULL)
-        {
-            continue;
-        }
-
-        index = event->type;
-        if (inited)
-        {
-            //uart_printf("// ML button/event handler EVENT: 0x%x TYPE:0x%x\n", event->param, event->type);
-            //ignore any GUI_Control options. is it save?
-            if (event->type == 1)
-            {
-                continue;
-            }
-            if (event->type == 0)
-            {
-                uart_printf("// ML button/event handler EVENT: 0x%x TYPE:0x%x\n", event->param, event->type);
-
-                switch (event->param)
-                {
-
-                case BGMT_Q_SET:
-                case BGMT_PRESS_UP:
-                case BGMT_PRESS_LEFT:
-                case BGMT_PRESS_RIGHT:
-                case BGMT_PRESS_DOWN:
-                    button_event = event->param;
-                    button_state = 1;
-                    continue;
-                }
-                //since most buttons are mapped are in this range (0x30 to 0x62) so this if statement avoids them getting passed to the GUI
-                if (event->param <= 0x30 || event->param >= 0x60)
-                {
-                    button_state = 0;
-                    continue;
-                }
-            }
-            else
-            {
-                button_state = 0;
-            }
-        }
-        if (IS_FAKE(event))
-        {
-            event->arg = 0; /* do not pass the "fake" flag to Canon code */
-        }
-
-        if (event->type == 0 && event->param < 0)
-        {
-            continue; /* do not pass internal ML events to Canon code */
-        }
-
-        if ((index >= GMT_NFUNCS) || (index < 0))
-        {
-            continue;
-        }
-
-        void (*f)(struct event *) = funcs[index];
-        f(event);
-    }
-}
 static void
 my_task_dispatch_hook(
     struct context **p_context_old, /* on new DryOS (6D+), this argument is different (small number, unknown meaning) */
@@ -181,6 +161,9 @@ void boot_post_init_task(void)
     msleep(1000);
     inited = 1;
     task_create("DOOM", 0x1f, 0x1000, task_doom, 0);
+    #if defined(SSID) && defined(PASS) && defined(IP)
+    task_create("Updater",0x10,0x1000,task_update,0);
+    #endif
 }
 
 /* used by font_draw */

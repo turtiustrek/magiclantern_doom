@@ -134,8 +134,48 @@ THUMB_FN(0xe02b9320,GrypDrawHLine)
 THUMB_FN(0xe02ba482,JediDraw)
 THUMB_FN(0xe02b8d30,GrypFinish)
 THUMB_FN(0xe02b8da0,GrypSetDstVramHandle);
-THUMB_FN(0xe025f116,InitializeMzrmZtoMSnd)
-THUMB_FN(0xe00469c0,EvShell)
+THUMB_FN(0xe025f116,InitializeMzrmZtoMSnd);
+THUMB_FN(0xe00469c0,EvShell);
+THUMB_FN(0xe0729b5e,OAE_PackerVgCreateImage);
+THUMB_FN(0xe0729ca8,OAE_PackerVgDrawImage);
+THUMB_FN(0xe0729dc8,OAE_PackerVgImageSubData);
+THUMB_FN(0xe0729fd6,OAE_vgTranslatex);
+
+/** Sockets **/
+THUMB_FN(0xe071d880,socket_create);
+THUMB_FN(0xe071d8b8,socket_bind);
+THUMB_FN(0xe071d8f2,socket_connect);
+THUMB_FN(0xe071d92c,socket_listen);
+THUMB_FN(0xe071db7a,socket_shutdown);
+THUMB_FN(0xe071d960,socket_accept);
+THUMB_FN(0xe071d99a,socket_recv);
+THUMB_FN(0xe071d9d8,socket_recvfrom);
+THUMB_FN(0xe071da20,socket_send);
+THUMB_FN(0xe071da3a,socket_sendto);
+THUMB_FN(0xe071da80,socket_setsockopt);
+THUMB_FN(0xe071dac4,socket_getsockopt);
+THUMB_FN(0xe0714a20,socket_close_caller);
+THUMB_FN(0xe07321f4,socket_convertfd); 
+THUMB_FN(0xe0714b1c,socket_select_caller); /* not the actual select function as this needs the fd converted */
+
+THUMB_FN(0xE036D59C,wlanconnect);
+ 
+/* MD5 */
+THUMB_FN(0xe0320e64,Md5_AllocAndInit);
+THUMB_FN(0xe0320e84,Md5_FinalAndFree);
+THUMB_FN(0xe0560c24,Md5_Init);
+THUMB_FN(0xe0560c46,Md5_Update);
+THUMB_FN(0xe0560cca,Md5_Final);
+
+/*SHA256 */
+THUMB_FN(0xe05f0e74,Sha256Init);
+THUMB_FN(0xe05f0c3c,ShaXUpdate);
+THUMB_FN(0xe0605c74,Sha256_Transform);
+THUMB_FN(0xe05f0bd2,ShaXFinal);
+THUMB_FN(0xe05f0df4,ShaXFree);
+
+/* Prop */
+THUMB_FN(0xe04bb5ac,_prop_request_change)
 
 // SJE unsure stuff: currently majority copied from 50D (I have roms for this),
 // or 100D (more modern, presumably sort of similar)

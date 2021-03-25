@@ -94,7 +94,7 @@
 //#define VERSION 0.1
 
 /* Define to 1 if you want to compile the unmodified code */
-#undef ORIGCODE
+#undef ORIGCODE //not gonna happen 
 
 /* Define to the directory where all game files are located */
 #define FILES_DIR "DOOM"

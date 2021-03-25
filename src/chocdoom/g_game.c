@@ -171,6 +171,7 @@ static int *weapon_keys[] = {
 // Set to -1 or +1 to switch to the previous or next weapon.
 
 static int next_weapon = 0;
+int *global_next_weapon = &next_weapon;
 
 // Used for prev/next weapon keys.
 
@@ -427,9 +428,9 @@ void G_BuildTiccmd (ticcmd_t* cmd, int maketic)
 
     // buttons
     cmd->chatchar = HU_dequeueChatChar(); 
- 
+    //uart_printf("gamekeydown:0x%x 0x%x\n",gamekeydown[key_fire]);
     if (gamekeydown[key_fire] || mousebuttons[mousebfire] 
-	|| joybuttons[joybfire]) 
+	|| joybuttons[joybfire])
 	cmd->buttons |= BT_ATTACK; 
  
     if (gamekeydown[key_use]

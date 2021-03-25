@@ -37,11 +37,15 @@ static const char
 #include "tables.h"
 #include "doomkeys.h"
 #include "bmp.h"
+#include "dryos.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include "extfunctions.h"
 #include "w_wad.h"
 #include "deh_str.h"
+
+extern void XimrExe(int a);
+
 // The screen buffer; this is modified to draw things to the screen
 
 byte *I_VideoBuffer = NULL;
@@ -58,6 +62,15 @@ boolean screensaver_mode = false;
 
 boolean screenvisible;
 
+//buttons mappings for camera
+//Final array size must be a even number which isfollowed by a Unpress keyevent and a Press keyevent
+// Unpress Press Unpress Press Unpress Press..
+int buttonEvents[] = {BGMT_Q_SET_UNPRESS, BGMT_Q_SET, BGMT_UNPRESS_UP, BGMT_PRESS_UP, BGMT_UNPRESS_DOWN, BGMT_PRESS_DOWN, BGMT_UNPRESS_LEFT, BGMT_PRESS_LEFT, BGMT_UNPRESS_RIGHT, BGMT_PRESS_RIGHT};
+int buttonMap[] = {KEY_FIRE, KEY_UPARROW, KEY_DOWNARROW, KEY_LEFTARROW, KEY_RIGHTARROW};
+
+int pushbuttonEvents[] = {BGMT_PLAY, BGMT_MENU, BGMT_INFO};
+int pushbuttonMap[] = {KEY_ENTER, KEY_ESCAPE, 'y'};
+
 // Mouse acceleration
 //
 // This emulates some of the behavior of DOS mouse drivers by increasing
@@ -67,9 +80,6 @@ boolean screenvisible;
 // the values exceed the value of mouse_threshold, they are multiplied
 // by mouse_acceleration to increase the speed.
 
-int button_event;
-bool button_state;
-
 float mouse_acceleration = 2.0;
 int mouse_threshold = 10;
 
@@ -78,7 +88,7 @@ int mouse_threshold = 10;
 int usegamma = 0;
 
 int usemouse = 0;
-
+extern int *global_next_weapon;
 // If true, keyboard mapping is ignored, like in Vanilla Doom.
 // The sensible thing to do is to disable this if you have a non-US
 // keyboard.
@@ -115,14 +125,13 @@ struct marv
     uint32_t height;       // Y resolution; may be larger than screen size
     uint32_t pmem;         // pointer to PMEM (Permanent Memory) structure
 };
-
+unsigned int handle;
 void I_InitGraphics(void)
 {
 
     I_VideoBuffer = (byte *)Z_Malloc(SCREENWIDTH * SCREENHEIGHT, PU_STATIC, NULL);
     S_VideoBuffer = (byte *)Z_Malloc(mode_scale_2x.height * mode_scale_2x.width, PU_STATIC, NULL);
     uart_printf("S_VideoBuffer at: 0x%x X:%d Y:%d\n", S_VideoBuffer, mode_scale_2x.width, mode_scale_2x.height);
-
     screenvisible = true;
 }
 
@@ -135,24 +144,151 @@ void I_ShutdownGraphics(void)
 void I_StartFrame(void)
 {
 }
+extern inited;
+struct gui_main_struct
+{
+    void *obj; // off_0x00;
+    uint32_t counter_550d;
+    uint32_t off_0x08;
+    uint32_t counter; // off_0x0c;
+    uint32_t off_0x10;
+    uint32_t off_0x14;
+    uint32_t off_0x18;
+    uint32_t off_0x1c;
+    uint32_t off_0x20;
+    uint32_t off_0x24;
+    uint32_t off_0x28;
+    uint32_t off_0x2c;
+    struct msg_queue *msg_queue;      // off_0x30;
+    struct msg_queue *off_0x34;       // off_0x34;
+    struct msg_queue *msg_queue_550d; // off_0x38;
+    uint32_t off_0x3c;
+};
+extern struct gui_main_struct gui_main_struct;
+void ml_gui_main_task()
+{
+    gui_init_end();
+    struct event *event = NULL;
+    event_t Doomevent;
+    int index = 0;
+    void *funcs[GMT_NFUNCS];
+    memcpy(funcs, (void *)GMT_FUNCTABLE, 4 * GMT_NFUNCS);
 
+    gui_init_end(); // no params?
+
+    while (1)
+    {
+#if defined(CONFIG_550D) || defined(CONFIG_7D)
+        msg_queue_receive(gui_main_struct.msg_queue_550d, &event, 0);
+        gui_main_struct.counter_550d--;
+#else
+        msg_queue_receive(gui_main_struct.msg_queue, &event, 0);
+        gui_main_struct.counter--;
+#endif
+
+        if (event == NULL)
+        {
+            continue;
+        }
+
+        index = event->type;
+        if (inited)
+        {
+
+            //uart_printf("// ML button/event handler EVENT: 0x%x TYPE:0x%x\n", event->param, event->type);
+            //ignore any GUI_Control options. is it save?
+            if (event->type == 1)
+            {
+                //uart_printf("// ML button/event handler EVENT: 0x%x TYPE:0x%x\n", event->param, event->type);
+                continue;
+            }
+
+            if (event->type == 0)
+            {
+                //uart_printf("// ML button/event handler EVENT: 0x%x TYPE:0x%x\n", event->param, event->type);
+                for (int index = 0; index < sizeof(buttonEvents) / sizeof(int); index++)
+                {
+                    if (event->param == buttonEvents[index])
+                    {
+                        if (index % 2)
+                        {
+                            //uart_printf("Keydown! 0x%x DoomEvent:0x%x\n",buttonEvents[index-1],buttonMap[(index) >> 1]);
+                            Doomevent.type = ev_keydown;
+                            Doomevent.data1 = buttonMap[(index) >> 1];
+                            Doomevent.data2 = -1;
+                            Doomevent.data3 = -1;
+                            D_PostEvent(&Doomevent);
+                            continue;
+                        }
+                        else
+                        {
+                            // uart_printf("Keyup! 0x%x Index:0x%x\n",buttonEvents[index],(index) >> 1);
+                            Doomevent.type = ev_keyup;
+                            Doomevent.data1 = buttonMap[(index) >> 1];
+                            Doomevent.data2 = -1;
+                            Doomevent.data3 = -1;
+                            D_PostEvent(&Doomevent);
+                            continue;
+                        }
+                    }
+                }
+                for (int index = 0; index < sizeof(pushbuttonEvents) / sizeof(int); index++)
+                {
+                    if (event->param == pushbuttonEvents[index])
+                    {
+                        //uart_printf(" 0x%x Index:0x%x\n",pushbuttonEvents[index], pushbuttonMap[index]);
+                        Doomevent.type = ev_keydown;
+                        Doomevent.data1 = pushbuttonMap[index];
+                        Doomevent.data2 = -1;
+                        Doomevent.data3 = -1;
+                        D_PostEvent(&Doomevent);
+                        continue;
+                    }
+                }
+                // special case for incrementing weapons
+                if (event->param == BGMT_WHEEL)
+                {
+                    if (global_next_weapon)
+                    {
+                        if (screenvisible)
+                        {
+                            *global_next_weapon = 1;
+                        }
+                    }
+                    continue;
+                }
+                // most buttons are mapped are in this range (0x30 to 0x62) so this if statement avoids them getting passed to the GUI
+                if (event->param <= 0x30 || event->param >= 0x60)
+                {
+
+                    continue;
+                }
+            }
+            else
+            {
+            }
+        }
+        if (IS_FAKE(event))
+        {
+            event->arg = 0; /* do not pass the "fake" flag to Canon code */
+        }
+
+        if (event->type == 0 && event->param < 0)
+        {
+            continue; /* do not pass internal ML events to Canon code */
+        }
+
+        if ((index >= GMT_NFUNCS) || (index < 0))
+        {
+            continue;
+        }
+
+        void (*f)(struct event *) = funcs[index];
+        f(event);
+    }
+}
 void I_GetEvent(void)
 {
-    event_t event;
-    bool local_button_state;
-
-    local_button_state = button_state; //turtius: implement button reads
-
-    if (last_button_state != button_state)
-    {
-        last_button_state = local_button_state;
-        event.type = last_button_state ? ev_keydown : ev_keyup;
-        event.data1 = button_event;
-        event.data2 = -1;
-        event.data3 = -1;
-        button_state =0;
-        D_PostEvent(&event);
-    }
 }
 
 void I_StartTic(void)
@@ -164,24 +300,34 @@ void I_UpdateNoBlit(void)
 {
 }
 
-extern void RefreshVrmsSurface(void);
-//7% increese in speed with unrolling and stuff
-//TODO: find a better way to refill the VRAM buffer
+/* used by font_draw */
+static uint32_t rgb2yuv422(uint8_t r, uint8_t g, uint8_t b)
+{
+    float R = r;
+    float G = g;
+    float B = b;
+    float Y, U, V;
+    uint8_t y, u, v;
 
-extern void GrypFill3DRect(int a, int b, int c, int d, int e, int f, int g, int h, int i, int j, int k, int l, int m);
-extern void JediDraw(int a, int *b, int c, int *d);
-extern void GrypDrawHLine(int a, int b, int c, int d);
-extern void GrypDrawLine(int marv, int x0, int y0, int x1, int y1);
-extern int GrypDrawImage(int marv, int pointer, int unkn, int unkn1, int x, int y, int yy);
-extern void GrypFinish(int marv, int a, int b, int c, int d, int e);
-extern int GrypDrawRect(int marv, int a, int b, int c, int d, int e, int f, int g, int h);
-extern int GrypSetDstVramHandle(int marv);
-extern void GrypSetGradStep(int a, int b, int c, int d, int e, int f, int g, int h);
-extern void XimrExe(int a);
-extern void DrawVRAM(int a, int b, int c, int d, int e, int f, int g, int h, int i);
+    Y = R * .299000 + G * .587000 + B * .114000;
+    U = R * -.168736 + G * -.331264 + B * .500000 + 128;
+    V = R * .500000 + G * -.418688 + B * -.081312 + 128;
+
+    y = Y;
+    u = U;
+    v = V;
+
+    return (u << 24) | (y << 16) | (v << 8) | y;
+}
+
+//7% increese in speed with unrolling
+//TODO: find a better way to refill the VRAM buffer
+//send help now this is too bad
 void I_FinishUpdate(void)
 {
-    // int start = MEM(0xD400000C);
+   
+    
+    
     int x, y;
     byte index;
     struct MARV *rgb_MARV = MEM(0xfd80);
@@ -192,7 +338,6 @@ void I_FinishUpdate(void)
 
     int row = 0;
     int col = 0;
-
     for (y = 0; y < mode_scale_2x.height; y++)
     {
         row = y * mode_scale_2x.width;
@@ -209,8 +354,11 @@ void I_FinishUpdate(void)
             *(bgra + ((x + 157)) + (col)) = rgb32_palette[S_VideoBuffer[row + x + 7]];
         }
     }
-
+    //int start = MEM(0xD400000C);
     XimrExe(0xA09A0);
+    
+   
+   
 }
 
 //
