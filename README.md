@@ -13,6 +13,7 @@ make clean && make CFLAG_USER='-DSSID=\"turtius\" -DPASS=\"turtius@123\" -DIP=\"
 Attributions:
 
 -([kitor](https://github.com/kitor)) & names_are_hard: display code
+
 -([coon](https://github.com/coon42)): wifi updater
 
 
