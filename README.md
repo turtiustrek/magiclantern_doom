@@ -1,3 +1,15 @@
+For 200D.101 only
+To compile:
+
+```
+cd platform/200D.101
+make clean && make -j32
+```
+For WIFI updater([https://github.com/coon42/drysh_tools](WIP)):
+```
+make clean && make CFLAG_USER='-DSSID=\"turtius\" -DPASS=\"turtius@123\" -DIP=\"192.168.100.13\"' -j32
+```
+
 Magic Lantern
 =============
 
