@@ -50,9 +50,6 @@ extern void XimrExe(int a);
 
 byte *I_VideoBuffer = NULL;
 
-//scaled buffer
-byte *S_VideoBuffer = NULL;
-
 // If true, game is running as a screensaver
 
 boolean screensaver_mode = false;
@@ -130,14 +127,11 @@ void I_InitGraphics(void)
 {
 
     I_VideoBuffer = (byte *)Z_Malloc(SCREENWIDTH * SCREENHEIGHT, PU_STATIC, NULL);
-    S_VideoBuffer = (byte *)Z_Malloc(mode_scale_2x.height * mode_scale_2x.width, PU_STATIC, NULL);
-    uart_printf("S_VideoBuffer at: 0x%x X:%d Y:%d\n", S_VideoBuffer, mode_scale_2x.width, mode_scale_2x.height);
     screenvisible = true;
 }
 
 void I_ShutdownGraphics(void)
 {
-    Z_Free(S_VideoBuffer);
     Z_Free(I_VideoBuffer);
 }
 
@@ -325,40 +319,43 @@ static uint32_t rgb2yuv422(uint8_t r, uint8_t g, uint8_t b)
 //send help now this is too bad
 void I_FinishUpdate(void)
 {
-   
-    
-    
-    int x, y;
-    byte index;
     struct MARV *rgb_MARV = MEM(0xfd80);
-    uint32_t *bgra = rgb_MARV->bitmap_data;
-    I_InitScale(I_VideoBuffer, S_VideoBuffer, mode_scale_2x.width * 1);
+    uint32_t *b = rgb_MARV->bitmap_data;
 
-    mode_scale_2x.DrawScreen(0, 0, SCREENWIDTH, SCREENHEIGHT);
+    const int src_w = 320;
+    const int src_h = 200;
+    const int dst_x = 160;
+    const int dst_y = 70;
+    const int out_w = 960;
+    int src_y = 0;
 
-    int row = 0;
-    int col = 0;
-    for (y = 0; y < mode_scale_2x.height; y++)
+    //value to go from row+0 end to row+2 start
+    const int row_ofsfet = out_w-src_w-src_w;
+
+    //two pointers to draw 2 rows at once
+    uint32_t *row1 = b + out_w*(dst_y) + dst_x;
+    uint32_t *row2 = b + out_w*(dst_y+1) + dst_x;
+
+    //to reduce lookups per loop
+    uint32_t color = 0;
+    for (int i = 0; i < src_h; i++)
     {
-        row = y * mode_scale_2x.width;
-        col = ((y + 50) * 960);
-        for (x = 0; x < mode_scale_2x.width; x += 8)
-        { //stolen from names_are_hard and kitor
-            *(bgra + ((x + 150)) + (col)) = rgb32_palette[S_VideoBuffer[row + x]];
-            *(bgra + ((x + 151)) + (col)) = rgb32_palette[S_VideoBuffer[row + x + 1]];
-            *(bgra + ((x + 152)) + (col)) = rgb32_palette[S_VideoBuffer[row + x + 2]];
-            *(bgra + ((x + 153)) + (col)) = rgb32_palette[S_VideoBuffer[row + x + 3]];
-            *(bgra + ((x + 154)) + (col)) = rgb32_palette[S_VideoBuffer[row + x + 4]];
-            *(bgra + ((x + 155)) + (col)) = rgb32_palette[S_VideoBuffer[row + x + 5]];
-            *(bgra + ((x + 156)) + (col)) = rgb32_palette[S_VideoBuffer[row + x + 6]];
-            *(bgra + ((x + 157)) + (col)) = rgb32_palette[S_VideoBuffer[row + x + 7]];
-        }
+        src_y = i * src_w;
+        for(int j = 0; j < src_w; j++){
+            //compute color once
+            color = rgb32_palette[I_VideoBuffer[src_y + j]];
+            //draw twice in each row
+            *row1++ = color;
+            *row1++ = color;
+            *row2++ = color;
+            *row2++ = color;
+          }
+        //move each pointer by two rows
+        row1 = row1 + out_w + row_ofsfet;
+        row2 = row2 + out_w + row_ofsfet;
     }
-    //int start = MEM(0xD400000C);
+
     XimrExe(0xA09A0);
-    
-   
-   
 }
 
 //
