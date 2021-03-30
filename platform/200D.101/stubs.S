@@ -95,7 +95,6 @@ NSTUB(0xE00921DD,  gui_init_end)
 NSTUB(0xE00C526B,  gui_main_task)
 THUMB_FN(0xe04a044d, RefreshVrmsSurface) // "Call RefreshVrmsSurface"
 
-
 /** GUI timers **/
 NSTUB(0xE04B9A3B,  CancelTimer)            /* from error message */
 NSTUB(0xE05301DF,  SetHPTimerAfterNow)     /* from error message */
@@ -122,20 +121,9 @@ NSTUB(    0x799C,  mpu_recv_ring_buffer_tail) // ring buffer index incremented i
 /** Misc **/
 NSTUB(0xE11C7CF9,  vsnprintf)              /* called near dmstart; references "01234567", "0123456789", "0123456789abcdef" and "0123456789ABCDEF"; second arg is size; the one called by DebugMsg only knows %s */
 NSTUB(0xE04BDC5D,uart_printf)
-THUMB_FN(0xe02b9464, GrypFill3DRect)
-THUMB_FN(0xe02b9410,GrypDrawRect)
-THUMB_FN(0xe02b9058,GrypSetGradStep)
+
+/** Graphics **/
 THUMB_FN(0xe01ef518,XimrExe)
-THUMB_FN(0xe049ebba,DrawVRAM)
-THUMB_FN(0xe02b981c,GrypSetImageIndexColorTable)
-THUMB_FN(0xe02b9394,GrypDrawLine)
-THUMB_FN(0xe02b94ea,GrypDrawImage)
-THUMB_FN(0xe02b9320,GrypDrawHLine)
-THUMB_FN(0xe02ba482,JediDraw)
-THUMB_FN(0xe02b8d30,GrypFinish)
-THUMB_FN(0xe02b8da0,GrypSetDstVramHandle);
-THUMB_FN(0xe025f116,InitializeMzrmZtoMSnd);
-THUMB_FN(0xe00469c0,EvShell);
 THUMB_FN(0xe0729b5e,OAE_PackerVgCreateImage);
 THUMB_FN(0xe0729ca8,OAE_PackerVgDrawImage);
 THUMB_FN(0xe0729dc8,OAE_PackerVgImageSubData);

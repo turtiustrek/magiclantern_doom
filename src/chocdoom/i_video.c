@@ -294,25 +294,7 @@ void I_UpdateNoBlit(void)
 {
 }
 
-/* used by font_draw */
-static uint32_t rgb2yuv422(uint8_t r, uint8_t g, uint8_t b)
-{
-    float R = r;
-    float G = g;
-    float B = b;
-    float Y, U, V;
-    uint8_t y, u, v;
 
-    Y = R * .299000 + G * .587000 + B * .114000;
-    U = R * -.168736 + G * -.331264 + B * .500000 + 128;
-    V = R * .500000 + G * -.418688 + B * -.081312 + 128;
-
-    y = Y;
-    u = U;
-    v = V;
-
-    return (u << 24) | (y << 16) | (v << 8) | y;
-}
 
 //7% increese in speed with unrolling
 //TODO: find a better way to refill the VRAM buffer

@@ -1,5 +1,6 @@
 //By coon
 //Repo: https://github.com/coon42/drysh_tools
+#if defined(SSID) && defined(PASS) && defined(IP)
 #include <stdlib.h>
 #include <string.h>
 
@@ -295,3 +296,4 @@ int main(int argc, char const* pArgv[]) {
   return drysh_ml_update(argc, pArgv);
 }
 */
+#endif

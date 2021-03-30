@@ -9,11 +9,8 @@
 #include "extfunctions.h"
 
 
-extern void dump_file(char *name, uint32_t addr, uint32_t size);
-extern void malloc_info(void);
-extern void sysmem_info(void);
-extern void smemShowFix(void);
-extern void font_draw(uint32_t, uint32_t, uint32_t, uint32_t, char *);
+
+
 extern void gui_main_task();
 
 //For DOOM
